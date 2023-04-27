@@ -1,4 +1,5 @@
 from scapy.all import *
+import time
 
 
 def main():
@@ -8,16 +9,18 @@ def main():
         option = input('Choose a menu option: ')
         if option == '1':
             print("Creating and sending packets ...")
-            # TODO
+            num = input("How many packets? ")
+            interval = input("How many seconds in between sending? ")
+            send_pkt(int(num), int(interval))
         elif option == '2':
             print("Listening to all traffic to 8.8.4.4 for 1 minute ...")
-            # TODO
+            pkt = sniff(filter = 'ip dst 8.8.4.4', prn = print_pkt, timeout = 60)
         elif option == '3':
             print("Listening continuously to only ping commands to 8.8.4.4 ...")
-            # TODO
+            pkt = sniff(filter="icmp and ip dst 8.8.4.4", prn = print_pkt)
         elif option == '4':
             print("Listening continuously to only outgoing telnet commands ...")
-            # TODO
+            pkt = sniff(filter = "ip src " + get_if_addr(conf.iface) + " and " + "tcp and dst port 23", prn=print_pkt)
         elif option == '5':
             print("End")
             break
@@ -46,9 +49,24 @@ def send_pkt(number, interval):
     #### Raw payload
     - Payload: "RISC-V Education: https://riscvedu.org/"
     """
+    proto = TCP()
+    proto.sport = 23
+    proto.dport = 80
 
-    # TODO
-    pass
+    pkt = IP()
+    pkt.src = "192.178.10.4"
+    pkt.dst = "8.8.4.4"
+    pkt.TTL = 26
+
+    eth = Ether()
+    eth.src = "00:11:22:33:44:55"
+    eth.dst = "55:44:33:22:11:00"
+
+    msg = "RISC-V Education: https://riscvedu.org/"
+
+    packet = eth/pkt/proto/msg
+
+    sendp(packet, inter = interval, count = number)
 
 
 def print_pkt(packet):
@@ -63,9 +81,13 @@ def print_pkt(packet):
     - Raw payload (if any)
     """
 
-    # TODO
-    pass
-
+    print("Source IP:", packet[IP].src)
+    print("Destination IP:", packet[IP].dst)
+    print("Protocol number:", packet[IP].proto)
+    print("TTL:", packet.ttl)
+    print("Length in bytes:", len(packet))
+    print("Raw payload:", "None" if not(packet.haslayer('Raw')) else packet[Raw].load)
+    print("\n")
 
 def print_menu():
     """Prints the menu of options"""
